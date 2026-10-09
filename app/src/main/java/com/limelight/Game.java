@@ -60,6 +60,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.OutcomeReceiver;
 import android.util.Rational;
 import android.view.Display;
 import android.view.InputDevice;
@@ -122,6 +123,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     private boolean connecting = false;
     private boolean connected = false;
     private boolean autoEnterPip = false;
+    private boolean fullscreenRequested = false;
     private boolean surfaceCreated = false;
     private boolean attemptedConnection = false;
     private int suppressPipRefCount = 0;
@@ -1010,6 +1012,40 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         }
     }
 
+    // On desktop windowing (freeform), a maximized window is still multi-window,
+    // so the immersive path above never runs. requestFullscreenMode() moves the
+    // task to fullscreen and back; onMultiWindowModeChanged() then applies the
+    // existing immersive or windowed flags.
+    private void setFullscreenRequested(final boolean enter) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE || enter == fullscreenRequested) {
+            return;
+        }
+        requestFullscreenMode(enter ? FULLSCREEN_MODE_REQUEST_ENTER : FULLSCREEN_MODE_REQUEST_EXIT,
+                new OutcomeReceiver<Void, Throwable>() {
+                    @Override
+                    public void onResult(Void result) {
+                        fullscreenRequested = enter;
+                    }
+
+                    @Override
+                    public void onError(Throwable error) {
+                        LimeLog.warning("requestFullscreenMode(" + enter + ") rejected: " + error);
+                    }
+                });
+    }
+
+    private void toggleFullscreen() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return;
+        }
+        if (fullscreenRequested) {
+            setFullscreenRequested(false);
+        }
+        else if (isInMultiWindowMode()) {
+            setFullscreenRequested(true);
+        }
+    }
+
     @Override
     @TargetApi(Build.VERSION_CODES.N)
     public void onMultiWindowModeChanged(boolean isInMultiWindowMode) {
@@ -1020,6 +1056,9 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         // This function will also be called for PiP so we can cover
         // that case here too.
         if (isInMultiWindowMode) {
+            // The user may have left fullscreen through the shell; the API's
+            // exit request no longer applies.
+            fullscreenRequested = false;
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
             decoderRenderer.notifyVideoBackground();
         }
@@ -1233,6 +1272,11 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                         finish();
                         break;
 
+                    // Toggle fullscreen (desktop windowing)
+                    case KeyEvent.KEYCODE_X:
+                        toggleFullscreen();
+                        break;
+
                     // Toggle cursor visibility
                     case KeyEvent.KEYCODE_C:
                         if (!grabbedInput) {
@@ -1264,6 +1308,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 case KeyEvent.KEYCODE_Z:
                 case KeyEvent.KEYCODE_Q:
                 case KeyEvent.KEYCODE_C:
+                case KeyEvent.KEYCODE_X:
                     // Remember that a special key combo was activated, so we can consume all key
                     // events until the modifiers come up
                     specialKeyCode = androidKeyCode;
@@ -2435,6 +2480,13 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 UiHelper.notifyStreamConnected(Game.this);
 
                 hideSystemUi(1000);
+
+                // Start streams fullscreen when launched into a desktop window, if enabled.
+                // Ctrl+Alt+Shift+X toggles either way.
+                if (prefConfig.startFullscreen &&
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && isInMultiWindowMode()) {
+                    setFullscreenRequested(true);
+                }
             }
         });
 

@@ -212,6 +212,11 @@
             android:title="@string/title_checkbox_enable_pip"
             android:summary="@string/summary_checkbox_enable_pip"
             android:defaultValue="false" />
+        <CheckBoxPreference
+            android:key="checkbox_start_fullscreen"
+            android:title="@string/title_checkbox_start_fullscreen"
+            android:summary="@string/summary_checkbox_start_fullscreen"
+            android:defaultValue="true" />
         <com.limelight.preferences.LanguagePreference
             android:key="list_languages"
             android:title="@string/title_language_list"

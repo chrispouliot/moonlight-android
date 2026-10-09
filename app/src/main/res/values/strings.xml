@@ -224,6 +224,8 @@
     <string name="category_ui_settings">UI Settings</string>
     <string name="title_checkbox_enable_pip">Enable Picture-in-Picture observer mode</string>
     <string name="summary_checkbox_enable_pip">Allows the stream to be viewed (but not controlled) while multitasking</string>
+    <string name="title_checkbox_start_fullscreen">Start streams in fullscreen</string>
+    <string name="summary_checkbox_start_fullscreen">When Moonlight is in a desktop window, switch to fullscreen as the stream starts. Ctrl+Alt+Shift+X toggles during a stream.</string>
     <string name="title_language_list">Language</string>
     <string name="summary_language_list">Language to use for Moonlight</string>
     <string name="title_checkbox_small_icon_mode">Use small box art</string>

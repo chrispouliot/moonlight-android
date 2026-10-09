@@ -327,6 +327,13 @@ public class StreamSettings extends Activity {
                 category.removePreference(findPreference("checkbox_enable_pip"));
             }
 
+            // requestFullscreenMode() for desktop windowing is Android 14+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                PreferenceCategory category =
+                        (PreferenceCategory) findPreference("category_ui_settings");
+                category.removePreference(findPreference("checkbox_start_fullscreen"));
+            }
+
             // Fire TV apps are not allowed to use WebViews or browsers, so hide the Help category
             /*if (getActivity().getPackageManager().hasSystemFeature("amazon.hardware.fire_tv")) {
                 PreferenceCategory category =
